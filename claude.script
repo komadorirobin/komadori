@@ -1,0 +1,99 @@
+<script>
+// Battery-optimized header scroll effect
+(function() {
+    'use strict';
+    
+    // Configuration
+    const SCROLL_THRESHOLD = 100;
+    const THROTTLE_DELAY = 100;
+    
+    // Check if user prefers reduced motion or is on mobile
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth <= 768;
+    
+    // Skip heavy animations if user prefers reduced motion or on mobile
+    if (prefersReducedMotion || isMobile) {
+        return;
+    }
+    
+    const header = document.querySelector('.bg-header');
+    const headerHeader = document.querySelector('.headerheader'); // The actual header container
+    
+    if (!header) return;
+    
+    let lastScrollTop = 0;
+    let isThrottled = false;
+    let rafId = null;
+    
+    function throttle(func, delay) {
+        return function(...args) {
+            if (!isThrottled) {
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                }
+                
+                rafId = requestAnimationFrame(() => {
+                    func.apply(this, args);
+                });
+                
+                isThrottled = true;
+                setTimeout(() => isThrottled = false, delay);
+            }
+        };
+    }
+    
+    function handleScroll() {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (Math.abs(scrollTop - lastScrollTop) < 5) return;
+        
+        if (scrollTop > SCROLL_THRESHOLD) {
+            if (!header.classList.contains('scrolled')) {
+                header.classList.add('scrolled');
+                document.body.classList.add('header-scrolled');
+                // Also add to the actual header container
+                if (headerHeader) {
+                    headerHeader.classList.add('scrolled');
+                }
+            }
+        } else {
+            if (header.classList.contains('scrolled')) {
+                header.classList.remove('scrolled');
+                document.body.classList.remove('header-scrolled');
+                if (headerHeader) {
+                    headerHeader.classList.remove('scrolled');
+                }
+            }
+        }
+        
+        lastScrollTop = scrollTop;
+    }
+    
+    const optimizedScrollHandler = throttle(handleScroll, THROTTLE_DELAY);
+    
+    window.addEventListener('scroll', optimizedScrollHandler, { 
+        passive: true,
+        capture: false
+    });
+    
+    handleScroll();
+    
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            window.removeEventListener('scroll', optimizedScrollHandler);
+        } else {
+            window.addEventListener('scroll', optimizedScrollHandler, { 
+                passive: true,
+                capture: false
+            });
+        }
+    });
+    
+    window.headerScrollCleanup = function() {
+        window.removeEventListener('scroll', optimizedScrollHandler);
+        if (rafId) {
+            cancelAnimationFrame(rafId);
+        }
+    };
+})();
+</script>
